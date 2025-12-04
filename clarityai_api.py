@@ -106,6 +106,7 @@ import os
 import json
 import requests
 import numpy as np
+import torch
 from PIL import Image
 from io import BytesIO
 
@@ -192,10 +193,13 @@ class CrystalUpscaler:
         out_bytes = requests.get(result_url, timeout=120).content
         out_img = Image.open(BytesIO(out_bytes)).convert("RGB")
 
-        out_np = np.array(out_img).astype(np.float32) / 255.0
-        out_np = np.expand_dims(out_np, 0)
+        out_np = np.array(out_img).astype(np.float32) / 255.0  # H, W, C
+        if out_np.ndim == 3:
+            out_np = np.expand_dims(out_np, 0)  # 1, H, W, C
 
-        return (out_np,)
+        out_tensor = torch.from_numpy(out_np).contiguous()  # Comfy expects torch tensor
+
+        return (out_tensor,)
 
 
 NODE_CLASS_MAPPINGS = {
